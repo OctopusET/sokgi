@@ -1,0 +1,13 @@
+[package]
+name = "sokgi"
+version = "0.1.0"
+edition = "2024"
+description = "Canonicalize GCC-style compiler flag strings (CFLAGS/CXXFLAGS/LDFLAGS) for stable content hashing"
+license = "Apache-2.0"
+repository = "https://github.com/OctopusET/sokgi"
+categories = ["parser-implementations", "development-tools::build-utils"]
+keywords = ["cflags", "gcc", "compiler", "canonical", "hash"]
+
+[dependencies]
+shlex = "1"
+thiserror = "2"
