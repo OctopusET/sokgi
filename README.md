@@ -24,6 +24,7 @@ assert_eq!(set.canonical(), "-O2 -g -march=cortex-a76+crc");
 | `-g[0-3]`, `-g<format>` | last-wins per axis; `-g0` drops format |
 | `-std=` | last-wins |
 | `-march=`, `-mcpu=`, `-mtune=` | last-wins per kind; `-march` drops `-mcpu` |
+| `-mabi=` | last-wins; lowercased |
 | `-D<N>[=V]` / `-U<N>` | last-wins per `N`; `-U` beats `-D` (POSIX c99) |
 | `-f<n>` / `-fno-<n>`, `-W<n>` / `-Wno-<n>` | last-wins per `n` |
 | `-pipe` | idempotent |
@@ -35,6 +36,10 @@ assert_eq!(set.canonical(), "-O2 -g -march=cortex-a76+crc");
 CPU name in `-m{arch,cpu,tune}=` is lowercased. Feature suffixes
 (`+crc`, `+nocrypto`, …) are verbatim — `+no<feat>` overrides left-to-
 right, so reordering is unsound.
+
+`-march=native` (and `-mcpu`/`-mtune`) is kept verbatim but raises
+`Warning::MachineDependent`: it resolves to the build machine's CPU,
+so it can never be a machine-independent cache key.
 
 Paths are never normalized (`-I/a/../b` stays as-is); symlinks and
 bind-mounts make lexical normalization unsafe.
@@ -67,14 +72,36 @@ impl FlagSet {
     pub fn parse(input: &str, dialect: Dialect)
         -> Result<(Self, Vec<Warning>), Error>;
     pub fn canonical(&self) -> String;
+    pub fn stable_hash(&self) -> u64;
+    pub fn stable_hash_hex(&self) -> String; // 16 lowercase hex chars
 }
 
 pub enum Warning {
     UnknownFlag(String),
     DroppedByOverride { dropped: String, by: String },
     ConflictingDefine(String),
+    MachineDependent(String),
 }
 ```
+
+## Stable hash
+
+`stable_hash()` is FNV-1a 64-bit over the UTF-8 bytes of
+`canonical()` — nothing else. Offset basis `0xcbf29ce484222325`,
+prime `0x100000001b3`, implemented inline; no dependencies.
+
+```rust
+use sokgi::{Dialect, FlagSet};
+let (set, _) = FlagSet::parse("-pipe -O3 -O3 -march=rv64gc", Dialect::C).unwrap();
+assert_eq!(set.stable_hash_hex(), "d70421711002d7dc"); // hash of "-pipe -O3 -march=rv64gc"
+```
+
+**Stability guarantee:** the algorithm and the canonical form it
+feeds on are frozen. Hash values are independent of rustc version,
+platform, endianness, and future sokgi releases, so they are safe as
+persistent content-addressed store keys. Golden tests in
+`tests/stable_hash.rs` pin literal values; a change there means every
+existing store key is invalid, and is treated as a breaking release.
 
 ## Prior art
 
