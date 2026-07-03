@@ -215,6 +215,25 @@ fn mabi_does_not_warn() {
 }
 
 #[test]
+fn native_warns_machine_dependent() {
+    for input in ["-march=native", "-mcpu=native", "-mtune=native"] {
+        let (set, warns) = parse(input);
+        assert_eq!(set.canonical(), input, "canonical changed for {input}");
+        assert_eq!(
+            warns,
+            vec![Warning::MachineDependent(input.into())],
+            "for {input}"
+        );
+    }
+}
+
+#[test]
+fn non_native_march_does_not_warn() {
+    let (_, warns) = FlagSet::parse("-march=rv64gc -mtune=generic", Dialect::C).unwrap();
+    assert!(warns.is_empty());
+}
+
+#[test]
 fn empty_machine_spec_is_raw() {
     let (set, warns) = FlagSet::parse("-march= -mcpu=", Dialect::C).unwrap();
     assert_eq!(set.canonical(), "-march= -mcpu=");
@@ -348,7 +367,7 @@ fn realistic_gentoo_cflags() {
         set.canonical(),
         "-pipe -O2 -march=native -D_FORTIFY_SOURCE=2 -fstack-protector-strong"
     );
-    assert!(warns.is_empty());
+    assert_eq!(warns, vec![Warning::MachineDependent("-march=native".into())]);
 }
 
 #[test]
