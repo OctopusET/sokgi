@@ -1,5 +1,13 @@
 use crate::error::Warning;
-use crate::flag::{Dialect, Flag};
+use crate::flag::{Dialect, Flag, MachineSpec};
+
+// `native` resolves to whatever CPU runs the compiler; the canonical
+// string is kept verbatim but can never be a machine-independent key.
+fn warn_native(kind: &str, m: &MachineSpec, warnings: &mut Vec<Warning>) {
+    if m.name == "native" {
+        warnings.push(Warning::MachineDependent(format!("{}={}", kind, m)));
+    }
+}
 
 pub(crate) fn canonicalize(
     flags: Vec<Flag>,
@@ -38,14 +46,19 @@ pub(crate) fn canonicalize(
             Flag::Std(_) => std_flag = Some(f),
             Flag::Pipe => pipe = true,
             Flag::March(ref m) => {
+                warn_native("-march", m, warnings);
                 last_march_raw = Some(format!("-march={}", m));
                 march = Some(f);
             }
             Flag::Mcpu(ref m) => {
+                warn_native("-mcpu", m, warnings);
                 last_mcpu_raw = Some(format!("-mcpu={}", m));
                 mcpu = Some(f);
             }
-            Flag::Mtune(_) => mtune = Some(f),
+            Flag::Mtune(ref m) => {
+                warn_native("-mtune", m, warnings);
+                mtune = Some(f);
+            }
             Flag::Mabi(_) => mabi = Some(f),
             Flag::Define { name, value } => {
                 if let Some(i) = defines.iter().position(|(n, _)| n == &name) {

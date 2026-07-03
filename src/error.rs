@@ -18,4 +18,6 @@ pub enum Warning {
     DroppedByOverride { dropped: String, by: String },
     #[error("conflicting -D{0} definitions; last wins")]
     ConflictingDefine(String),
+    #[error("{0} depends on the build machine; unfit as a stable cache key")]
+    MachineDependent(String),
 }
