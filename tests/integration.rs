@@ -186,6 +186,35 @@ fn march_last_wins() {
 }
 
 #[test]
+fn mabi_last_wins() {
+    assert_eq!(canon("-mabi=ilp32 -mabi=lp64d"), "-mabi=lp64d");
+}
+
+#[test]
+fn mabi_order_insensitive() {
+    assert_eq!(canon("-mabi=lp64d -O2"), canon("-O2 -mabi=lp64d"));
+}
+
+#[test]
+fn mabi_lowercased() {
+    assert_eq!(canon("-mabi=LP64D"), "-mabi=lp64d");
+}
+
+#[test]
+fn mabi_after_march() {
+    assert_eq!(
+        canon("-mabi=lp64d -march=rv64gc -O2"),
+        "-O2 -march=rv64gc -mabi=lp64d"
+    );
+}
+
+#[test]
+fn mabi_does_not_warn() {
+    let (_, warns) = FlagSet::parse("-march=rv64gc -mabi=lp64d", Dialect::C).unwrap();
+    assert!(warns.is_empty());
+}
+
+#[test]
 fn empty_machine_spec_is_raw() {
     let (set, warns) = FlagSet::parse("-march= -mcpu=", Dialect::C).unwrap();
     assert_eq!(set.canonical(), "-march= -mcpu=");
