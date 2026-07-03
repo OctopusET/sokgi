@@ -80,6 +80,9 @@ fn classify_single(tok: &str) -> Option<Flag> {
     if let Some(rest) = tok.strip_prefix("-mtune=") {
         return parse_machine_spec(rest).map(Flag::Mtune);
     }
+    if let Some(rest) = tok.strip_prefix("-mabi=").filter(|s| !s.is_empty()) {
+        return Some(Flag::Mabi(rest.to_ascii_lowercase()));
+    }
     if let Some(rest) = tok.strip_prefix("-D") {
         if rest.is_empty() {
             return None;

@@ -18,6 +18,7 @@ pub(crate) fn canonicalize(
     let mut march: Option<Flag> = None;
     let mut mcpu: Option<Flag> = None;
     let mut mtune: Option<Flag> = None;
+    let mut mabi: Option<Flag> = None;
     let mut defines: Vec<(String, Option<String>)> = Vec::new();
     let mut undefs: Vec<String> = Vec::new();
     let mut toggles: Vec<(String, bool)> = Vec::new();
@@ -45,6 +46,7 @@ pub(crate) fn canonicalize(
                 mcpu = Some(f);
             }
             Flag::Mtune(_) => mtune = Some(f),
+            Flag::Mabi(_) => mabi = Some(f),
             Flag::Define { name, value } => {
                 if let Some(i) = defines.iter().position(|(n, _)| n == &name) {
                     if defines[i].1 != value {
@@ -101,6 +103,7 @@ pub(crate) fn canonicalize(
     unordered.extend(march);
     unordered.extend(mcpu);
     unordered.extend(mtune);
+    unordered.extend(mabi);
 
     defines.sort_by(|a, b| a.0.cmp(&b.0));
     for (name, value) in defines {
