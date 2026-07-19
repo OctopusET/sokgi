@@ -392,3 +392,52 @@ fn canonical_is_idempotent() {
         assert_eq!(c1, c2, "not idempotent for {input:?}");
     }
 }
+
+#[test]
+fn abi_key_same_for_same_arch_different_opt() {
+    let flags1 = FlagSet::parse("-O2 -march=armv8-a", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-O3 -march=armv8-a", Dialect::C).unwrap().0;
+    assert_eq!(flags1.abi_key(), flags2.abi_key());
+}
+
+#[test]
+fn abi_key_different_for_different_arch() {
+    let flags1 = FlagSet::parse("-O2 -march=armv8-a", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-O2 -march=armv7-a", Dialect::C).unwrap().0;
+    assert_ne!(flags1.abi_key(), flags2.abi_key());
+}
+
+#[test]
+fn abi_key_empty_for_no_abi_flags() {
+    let flags = FlagSet::parse("-O2 -g -pipe", Dialect::C).unwrap().0;
+    assert_eq!(flags.abi_key(), "");
+}
+
+#[test]
+fn abi_key_includes_mabi() {
+    let flags1 = FlagSet::parse("-mabi=lp64", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-mabi=ilp32", Dialect::C).unwrap().0;
+    assert_ne!(flags1.abi_key(), flags2.abi_key());
+}
+
+#[test]
+fn abi_key_includes_mtune() {
+    let flags1 = FlagSet::parse("-mtune=generic", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-mtune=cortex-a55", Dialect::C).unwrap().0;
+    assert_ne!(flags1.abi_key(), flags2.abi_key());
+}
+
+#[test]
+fn is_machine_dependent_native() {
+    assert!(FlagSet::parse("-march=native", Dialect::C).unwrap().0.is_machine_dependent());
+    assert!(FlagSet::parse("-mcpu=native", Dialect::C).unwrap().0.is_machine_dependent());
+    assert!(FlagSet::parse("-mtune=native", Dialect::C).unwrap().0.is_machine_dependent());
+}
+
+#[test]
+fn is_machine_dependent_not_native() {
+    assert!(!FlagSet::parse("-march=x86-64", Dialect::C).unwrap().0.is_machine_dependent());
+    assert!(!FlagSet::parse("-mcpu=cortex-a55", Dialect::C).unwrap().0.is_machine_dependent());
+    assert!(!FlagSet::parse("-mtune=generic", Dialect::C).unwrap().0.is_machine_dependent());
+    assert!(!FlagSet::parse("-O2 -g", Dialect::C).unwrap().0.is_machine_dependent());
+}
