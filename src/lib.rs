@@ -2,7 +2,7 @@
 //!
 //! ```
 //! use sokgi::{Dialect, FlagSet};
-//! let (set, _) = FlagSet::parse("-O3 -O2 -g", Dialect::C).unwrap();
+//! let (set, _) = Dialect::C.parse("-O3 -O2 -g").unwrap();
 //! assert_eq!(set.canonical(), "-O2 -g");
 //! ```
 
@@ -144,5 +144,24 @@ impl FlagSet {
     /// Check if a flag impacts ABI/ISA compatibility.
     fn is_abi_impacting(flag: &Flag) -> bool {
         matches!(flag, Flag::March(_) | Flag::Mcpu(_) | Flag::Mtune(_) | Flag::Mabi(_))
+    }
+}
+
+impl Dialect {
+    /// Parse a string of compiler flags, returning a [`FlagSet`] and warnings.
+    ///
+    /// This is a shorthand for [`FlagSet::parse`]:
+    ///
+    /// ```
+    /// use sokgi::{Dialect, FlagSet};
+    /// // Instead of:
+    /// let (set, warnings) = FlagSet::parse("-O3 -O2 -g", Dialect::C).unwrap();
+    ///
+    /// // You can write:
+    /// let (set, warnings) = Dialect::C.parse("-O3 -O2 -g").unwrap();
+    /// assert_eq!(set.canonical(), "-O2 -g");
+    /// ```
+    pub fn parse(self, input: &str) -> Result<(FlagSet, Vec<Warning>), Error> {
+        FlagSet::parse(input, self)
     }
 }
