@@ -83,6 +83,15 @@ fn classify_single(tok: &str) -> Option<Flag> {
     if let Some(rest) = tok.strip_prefix("-mabi=").filter(|s| !s.is_empty()) {
         return Some(Flag::Mabi(rest.to_ascii_lowercase()));
     }
+    if let "-m16" | "-m32" | "-m64" | "-mx32" = tok {
+        return Some(Flag::Mwidth(tok[2..].into()));
+    }
+    if let Some(rest) = tok.strip_prefix("-mfloat-abi=").filter(|s| !s.is_empty()) {
+        return Some(Flag::MfloatAbi(rest.to_ascii_lowercase()));
+    }
+    if let Some(rest) = tok.strip_prefix("-mfpu=").filter(|s| !s.is_empty()) {
+        return Some(Flag::Mfpu(rest.to_ascii_lowercase()));
+    }
     if let Some(rest) = tok.strip_prefix("-D") {
         if rest.is_empty() {
             return None;
