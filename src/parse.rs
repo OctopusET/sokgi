@@ -83,53 +83,31 @@ fn classify_single(tok: &str) -> Option<Flag> {
     if let Some(rest) = tok.strip_prefix("-mabi=").filter(|s| !s.is_empty()) {
         return Some(Flag::Mabi(rest.to_ascii_lowercase()));
     }
-    if let "-m16" | "-m32" | "-m64" | "-mx32" = tok {
-        return Some(Flag::Mwidth(tok[2..].into()));
-    }
     if let Some(rest) = tok.strip_prefix("-mfloat-abi=").filter(|s| !s.is_empty()) {
         return Some(Flag::MfloatAbi(rest.to_ascii_lowercase()));
     }
     if let Some(rest) = tok.strip_prefix("-mfpu=").filter(|s| !s.is_empty()) {
         return Some(Flag::Mfpu(rest.to_ascii_lowercase()));
     }
-    if tok == "-mthumb" {
-        return Some(Flag::Mthumb(true));
-    }
-    if tok == "-mno-thumb" {
-        return Some(Flag::Mthumb(false));
-    }
-    if tok == "-mlittle-endian" {
-        return Some(Flag::Mendian("little".into()));
-    }
-    if tok == "-mbig-endian" {
-        return Some(Flag::Mendian("big".into()));
-    }
-    if tok == "-mhard-float" {
-        return Some(Flag::MhardFloat(true));
-    }
-    if tok == "-msoft-float" {
-        return Some(Flag::MhardFloat(false));
-    }
     if let Some(rest) = tok.strip_prefix("-mcmodel=").filter(|s| !s.is_empty()) {
         return Some(Flag::Mcmodel(rest.to_ascii_lowercase()));
     }
-    if tok == "-malign-double" {
-        return Some(Flag::MalignDouble(true));
-    }
-    if tok == "-mno-align-double" {
-        return Some(Flag::MalignDouble(false));
-    }
-    if tok == "-mgeneral-regs-only" {
-        return Some(Flag::MgeneralRegsOnly(true));
-    }
-    if tok == "-mno-general-regs-only" {
-        return Some(Flag::MgeneralRegsOnly(false));
-    }
-    if tok == "-mms-bitfields" {
-        return Some(Flag::MmsBitfields(true));
-    }
-    if tok == "-mno-ms-bitfields" {
-        return Some(Flag::MmsBitfields(false));
+    match tok {
+        "-m16" | "-m32" | "-m64" | "-mx32" => return Some(Flag::Mwidth(tok[2..].into())),
+        "-mthumb" => return Some(Flag::Mthumb(true)),
+        // GCC: -marm is the RejectNegative inverse of -mthumb.
+        "-mno-thumb" | "-marm" => return Some(Flag::Mthumb(false)),
+        "-mlittle-endian" => return Some(Flag::Mendian("little".into())),
+        "-mbig-endian" => return Some(Flag::Mendian("big".into())),
+        "-mhard-float" => return Some(Flag::MhardFloat(true)),
+        "-msoft-float" => return Some(Flag::MhardFloat(false)),
+        "-malign-double" => return Some(Flag::MalignDouble(true)),
+        "-mno-align-double" => return Some(Flag::MalignDouble(false)),
+        "-mgeneral-regs-only" => return Some(Flag::MgeneralRegsOnly(true)),
+        "-mno-general-regs-only" => return Some(Flag::MgeneralRegsOnly(false)),
+        "-mms-bitfields" => return Some(Flag::MmsBitfields(true)),
+        "-mno-ms-bitfields" => return Some(Flag::MmsBitfields(false)),
+        _ => {}
     }
     if let Some(rest) = tok.strip_prefix("-D") {
         if rest.is_empty() {

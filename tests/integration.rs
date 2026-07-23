@@ -482,6 +482,14 @@ fn mthumb_last_wins() {
 }
 
 #[test]
+fn marm_is_mno_thumb() {
+    let (set, warns) = FlagSet::parse("-mthumb -marm", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mno-thumb");
+    assert!(warns.is_empty());
+    assert_eq!(canon("-marm"), canon("-mno-thumb"));
+}
+
+#[test]
 fn mendian_last_wins() {
     let (set, _) = FlagSet::parse("-mlittle-endian -mbig-endian", Dialect::C).unwrap();
     assert_eq!(set.canonical(), "-mbig-endian");
