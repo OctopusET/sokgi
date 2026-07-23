@@ -474,6 +474,80 @@ fn mfloat_abi_mfpu_last_wins_lowercased() {
 }
 
 #[test]
+fn mthumb_last_wins() {
+    let (set, _) = FlagSet::parse("-mno-thumb -mthumb", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mthumb");
+    let (set, _) = FlagSet::parse("-mthumb -mno-thumb", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mno-thumb");
+}
+
+#[test]
+fn mendian_last_wins() {
+    let (set, _) = FlagSet::parse("-mlittle-endian -mbig-endian", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mbig-endian");
+    let (set, _) = FlagSet::parse("-mbig-endian -mlittle-endian", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mlittle-endian");
+}
+
+#[test]
+fn mhard_float_last_wins() {
+    let (set, _) = FlagSet::parse("-msoft-float -mhard-float", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mhard-float");
+    let (set, _) = FlagSet::parse("-mhard-float -msoft-float", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-msoft-float");
+}
+
+#[test]
+fn mcmodel_last_wins_lowercased() {
+    let (set, _) = FlagSet::parse("-mcmodel=medany -mcmodel=MEDLOW", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mcmodel=medlow");
+}
+
+#[test]
+fn malign_double_last_wins() {
+    let (set, _) = FlagSet::parse("-mno-align-double -malign-double", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-malign-double");
+}
+
+#[test]
+fn mgeneral_regs_only_last_wins() {
+    let (set, _) = FlagSet::parse("-mno-general-regs-only -mgeneral-regs-only", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mgeneral-regs-only");
+}
+
+#[test]
+fn mms_bitfields_last_wins() {
+    let (set, _) = FlagSet::parse("-mno-ms-bitfields -mms-bitfields", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mms-bitfields");
+}
+
+#[test]
+fn abi_key_includes_new_m_flags() {
+    let base = FlagSet::parse("-O2 -march=armv8-a", Dialect::C).unwrap().0;
+    let with_thumb = FlagSet::parse("-O2 -march=armv8-a -mthumb", Dialect::C).unwrap().0;
+    assert_ne!(base.abi_key(), with_thumb.abi_key());
+
+    let with_endian = FlagSet::parse("-O2 -march=armv8-a -mbig-endian", Dialect::C).unwrap().0;
+    assert_ne!(base.abi_key(), with_endian.abi_key());
+
+    let with_hard_float = FlagSet::parse("-O2 -march=armv8-a -mhard-float", Dialect::C).unwrap().0;
+    assert_ne!(base.abi_key(), with_hard_float.abi_key());
+
+    let with_cmodel = FlagSet::parse("-O2 -march=rv64gc -mcmodel=medany", Dialect::C).unwrap().0;
+    let with_cmodel2 = FlagSet::parse("-O2 -march=rv64gc -mcmodel=medlow", Dialect::C).unwrap().0;
+    assert_ne!(with_cmodel.abi_key(), with_cmodel2.abi_key());
+
+    let with_align = FlagSet::parse("-O2 -march=armv8-a -malign-double", Dialect::C).unwrap().0;
+    assert_ne!(base.abi_key(), with_align.abi_key());
+
+    let with_general = FlagSet::parse("-O2 -march=armv8-a -mgeneral-regs-only", Dialect::C).unwrap().0;
+    assert_ne!(base.abi_key(), with_general.abi_key());
+
+    let with_ms = FlagSet::parse("-O2 -march=x86-64 -mms-bitfields", Dialect::C).unwrap().0;
+    assert_ne!(FlagSet::parse("-O2 -march=x86-64", Dialect::C).unwrap().0.abi_key(), with_ms.abi_key());
+}
+
+#[test]
 fn is_machine_dependent_native() {
     assert!(FlagSet::parse("-march=native", Dialect::C).unwrap().0.is_machine_dependent());
     assert!(FlagSet::parse("-mcpu=native", Dialect::C).unwrap().0.is_machine_dependent());

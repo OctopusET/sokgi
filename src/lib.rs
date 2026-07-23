@@ -84,6 +84,9 @@ impl FlagSet {
 
     /// Stable hash of only the ABI-selecting flags: `-march=`, `-mcpu=`,
     /// `-mabi=`, `-m16`/`-m32`/`-m64`/`-mx32`, `-mfloat-abi=`, `-mfpu=`,
+    /// `-mthumb`/`-mno-thumb`, `-mlittle-endian`/`-mbig-endian`,
+    /// `-mhard-float`/`-msoft-float`, `-mcmodel=`, `-malign-double`,
+    /// `-mgeneral-regs-only`, `-mms-bitfields`,
     /// and the layout toggles `-f[no-]short-enums`, `-f[no-]short-wchar`,
     /// `-f[no-]pack-struct[=n]`. 16 lowercase hex characters, or `""` if
     /// the set contains none of them.
@@ -134,7 +137,14 @@ fn is_abi_flag(f: &Flag) -> bool {
         | Flag::Mabi(_)
         | Flag::Mwidth(_)
         | Flag::MfloatAbi(_)
-        | Flag::Mfpu(_) => true,
+        | Flag::Mfpu(_)
+        | Flag::Mthumb(_)
+        | Flag::Mendian(_)
+        | Flag::MhardFloat(_)
+        | Flag::Mcmodel(_)
+        | Flag::MalignDouble(_)
+        | Flag::MgeneralRegsOnly(_)
+        | Flag::MmsBitfields(_) => true,
         Flag::Toggle { name, .. } => {
             name == "short-enums"
                 || name == "short-wchar"

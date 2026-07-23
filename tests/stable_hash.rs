@@ -94,6 +94,18 @@ fn golden_abi_key() {
     );
     assert_eq!(set("-fshort-enums -O2").abi_key(), "549e0c899780331b");
     assert_eq!(set("-O2 -g -pipe").abi_key(), "");
+    // New ABI flags
+    assert_eq!(set("-mthumb").abi_key(), "fcd192d0fdaad1f5");
+    assert_eq!(set("-mno-thumb").abi_key(), "621653d2abfeb281");
+    assert_eq!(set("-mbig-endian").abi_key(), "78479336ec0ce7c1");
+    assert_eq!(set("-mlittle-endian").abi_key(), "1a2f9bb4c39ff695");
+    assert_eq!(set("-mhard-float").abi_key(), "71dcfcce85fa8655");
+    assert_eq!(set("-msoft-float").abi_key(), "d44437d07de1f4f8");
+    assert_eq!(set("-mcmodel=medany").abi_key(), "3074a3896a3bd6bc");
+    assert_eq!(set("-mcmodel=medlow").abi_key(), "051acc8951aaca90");
+    assert_eq!(set("-malign-double").abi_key(), "87a73b576e7739c6");
+    assert_eq!(set("-mgeneral-regs-only").abi_key(), "1cc53c75a92322bc");
+    assert_eq!(set("-mms-bitfields").abi_key(), "06794e6350bb0158");
 }
 
 #[test]
