@@ -76,28 +76,28 @@ impl FlagSet {
     /// assert!(!set.is_machine_dependent());
     /// ```
     pub fn is_machine_dependent(&self) -> bool {
-        self.all_flags().iter().any(|f| {
-            match f {
-                Flag::March(m) | Flag::Mcpu(m) | Flag::Mtune(m) => m.name == "native",
-                _ => false,
-            }
+        self.unordered.iter().chain(&self.ordered).any(|f| match f {
+            Flag::March(m) | Flag::Mcpu(m) | Flag::Mtune(m) => m.name == "native",
+            _ => false,
         })
     }
 
-    /// Returns a stable hash of only the ABI/ISA-impacting flags.
+    /// Stable hash of only the target-selection flags: `-march=`,
+    /// `-mcpu=`, `-mtune=`, `-mabi=`. 16 lowercase hex characters, or
+    /// `""` if the set contains none of them.
     ///
-    /// Two flag sets with different optimization levels, debug info, or
-    /// include paths but the same machine architecture flags will have
-    /// the same ABI key, indicating they produce ABI-compatible (but not
-    /// necessarily identical) binaries.
+    /// Flag sets differing only in optimization, debug, or include
+    /// flags share an ABI key, so a cache can allow reuse across those
+    /// but not across targets.
     ///
-    /// ABI-impacting flags are those that affect code generation in ways
-    /// that change binary compatibility:
-    /// - `-march=`, `-mcpu=`, `-mtune=` (target selection)
-    /// - `-mabi=` (ABI selection)
+    /// Equal keys mean equal target flags, not proven ABI
+    /// compatibility: other ABI-affecting flags (`-mfloat-abi=`,
+    /// `-fshort-enums`, `-fpack-struct`, ...) are not modeled, and
+    /// `-mtune=` is included although it affects only scheduling, not
+    /// ABI.
     ///
-    /// This is useful for scenarios where you want to allow reuse across
-    /// optimization levels but not across architectures.
+    /// Frozen like [`FlagSet::stable_hash`]: FNV-1a 64-bit over the
+    /// canonical form of the target flags, pinned by golden tests.
     ///
     /// ```
     /// use sokgi::{Dialect, FlagSet};
@@ -113,37 +113,21 @@ impl FlagSet {
     /// ```
     pub fn abi_key(&self) -> String {
         let abi_flags: Vec<Flag> = self
-            .all_flags()
-            .into_iter()
-            .filter(|f| Self::is_abi_impacting(f))
+            .unordered
+            .iter()
+            .chain(&self.ordered)
+            .filter(|f| {
+                matches!(f, Flag::March(_) | Flag::Mcpu(_) | Flag::Mtune(_) | Flag::Mabi(_))
+            })
+            .cloned()
             .collect();
 
         if abi_flags.is_empty() {
             return String::new();
         }
 
-        // Separate into unordered and ordered (same logic as canonicalize)
-        let (unordered, ordered): (Vec<Flag>, Vec<Flag>) = abi_flags
-            .into_iter()
-            .partition(|f| matches!(
-                f,
-                Flag::March(_) | Flag::Mcpu(_) | Flag::Mtune(_) | Flag::Mabi(_)
-            ));
-
-        let canonical = crate::emit::emit(&unordered, &ordered);
-        format!("{:016x}", crate::hash::fnv1a_64(canonical.as_bytes()))
-    }
-
-    /// Returns all flags (both unordered and ordered) as a single vector.
-    fn all_flags(&self) -> Vec<Flag> {
-        let mut all = self.unordered.clone();
-        all.extend(self.ordered.clone());
-        all
-    }
-
-    /// Check if a flag impacts ABI/ISA compatibility.
-    fn is_abi_impacting(flag: &Flag) -> bool {
-        matches!(flag, Flag::March(_) | Flag::Mcpu(_) | Flag::Mtune(_) | Flag::Mabi(_))
+        let canonical = emit::emit(&abi_flags, &[]);
+        format!("{:016x}", hash::fnv1a_64(canonical.as_bytes()))
     }
 }
 
