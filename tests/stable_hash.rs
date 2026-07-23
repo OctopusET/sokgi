@@ -71,17 +71,36 @@ fn hex_is_16_lowercase_chars() {
 
 #[test]
 fn golden_abi_key() {
-    // abi_key == FNV-1a-64 hex of the canonical target flags only.
+    // abi_key == FNV-1a-64 hex of the canonical ABI flags only.
     assert_eq!(set("-O2 -g -march=armv8-a").abi_key(), "bd45f0705391150c");
     assert_eq!(
         set("-pipe -mabi=lp64d -O2 -march=rv64gc").abi_key(),
         "bd73b76f1d69b62d"
     );
-    assert_eq!(set("-mtune=generic").abi_key(), "625cec8df7399ff1");
+    // -mtune is scheduling-only: excluded.
+    assert_eq!(set("-mtune=generic").abi_key(), "");
+    assert_eq!(
+        set("-O2 -march=armv8-a -mtune=cortex-a55").abi_key(),
+        "bd45f0705391150c"
+    );
     // -march drops -mcpu before keying.
     assert_eq!(set("-march=x86-64 -mcpu=nehalem").abi_key(), "bb36f8e7f8447eb1");
     assert_eq!(set("-mcpu=cortex-a55").abi_key(), "088bb00be97cac57");
+    assert_eq!(set("-m32").abi_key(), "53ea688fa280dbb2");
+    assert_eq!(set("-m64 -O3").abi_key(), "53e0788fa278a25d");
+    assert_eq!(
+        set("-mfpu=neon -march=armv7-a -g -mfloat-abi=hard").abi_key(),
+        "336695b3a6b4396a"
+    );
+    assert_eq!(set("-fshort-enums -O2").abi_key(), "549e0c899780331b");
     assert_eq!(set("-O2 -g -pipe").abi_key(), "");
+}
+
+#[test]
+fn golden_abi_flag_canonical_order() {
+    let s = set("-mfpu=neon -m32 -mfloat-abi=hard -march=armv7-a");
+    assert_eq!(s.canonical(), "-march=armv7-a -m32 -mfloat-abi=hard -mfpu=neon");
+    assert_eq!(s.stable_hash_hex(), "af7bb2c0b947a927");
 }
 
 #[test]
