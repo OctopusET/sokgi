@@ -1,6 +1,6 @@
 [package]
 name = "sokgi"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "Canonicalize GCC-style compiler flag strings (CFLAGS/CXXFLAGS/LDFLAGS) for stable content hashing"
 license = "Apache-2.0"
