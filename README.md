@@ -25,6 +25,8 @@ assert_eq!(set.canonical(), "-O2 -g -march=cortex-a76+crc");
 | `-std=` | last-wins |
 | `-march=`, `-mcpu=`, `-mtune=` | last-wins per kind; `-march` drops `-mcpu` |
 | `-mabi=` | last-wins; lowercased |
+| `-m16`/`-m32`/`-m64`/`-mx32` | last-wins |
+| `-mfloat-abi=`, `-mfpu=` | last-wins; lowercased |
 | `-D<N>[=V]` / `-U<N>` | last-wins per `N`; `-U` beats `-D` (POSIX c99) |
 | `-f<n>` / `-fno-<n>`, `-W<n>` / `-Wno-<n>` | last-wins per `n` |
 | `-pipe` | idempotent |
@@ -74,7 +76,7 @@ impl FlagSet {
     pub fn canonical(&self) -> String;
     pub fn stable_hash(&self) -> u64;
     pub fn stable_hash_hex(&self) -> String; // 16 lowercase hex chars
-    pub fn abi_key(&self) -> String;         // target flags only; "" if none
+    pub fn abi_key(&self) -> String;         // ABI flags only; "" if none
     pub fn is_machine_dependent(&self) -> bool; // any -m*=native
 }
 
@@ -112,16 +114,18 @@ existing store key is invalid, and is treated as a breaking release.
 
 ## ABI key
 
-`abi_key()` hashes only the target-selection flags (`-march=`,
-`-mcpu=`, `-mtune=`, `-mabi=`) after canonicalization: FNV-1a 64-bit,
-16 hex chars, `""` if none present. Sets differing only in `-O`, `-g`,
-or include flags share a key, so a cache can reuse across optimization
-levels but not across targets.
+`abi_key()` hashes only the ABI-selecting flags after
+canonicalization: `-march=`, `-mcpu=`, `-mabi=`,
+`-m16`/`-m32`/`-m64`/`-mx32`, `-mfloat-abi=`, `-mfpu=`, and the layout
+toggles `-f[no-]short-enums`, `-f[no-]short-wchar`,
+`-f[no-]pack-struct[=n]`. FNV-1a 64-bit, 16 hex chars, `""` if none
+present.
 
-Equal keys mean equal target flags, not proven ABI compatibility:
-other ABI-affecting flags (`-mfloat-abi=`, `-fshort-enums`, …) are not
-modeled, and `-mtune=` is included although it affects only
-scheduling. Frozen like `stable_hash`, pinned in
+`-mtune=` is excluded: it changes instruction scheduling, not the ABI,
+so builds differing only in `-mtune=` share a key. Sets differing only
+in `-O`, `-g`, or include flags share a key too, so a cache can reuse
+across those axes but not across targets. Flags outside the list are
+not modeled. Frozen like `stable_hash`, pinned in
 `tests/stable_hash.rs`.
 
 ## Prior art
