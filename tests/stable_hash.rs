@@ -70,6 +70,21 @@ fn hex_is_16_lowercase_chars() {
 }
 
 #[test]
+fn golden_abi_key() {
+    // abi_key == FNV-1a-64 hex of the canonical target flags only.
+    assert_eq!(set("-O2 -g -march=armv8-a").abi_key(), "bd45f0705391150c");
+    assert_eq!(
+        set("-pipe -mabi=lp64d -O2 -march=rv64gc").abi_key(),
+        "bd73b76f1d69b62d"
+    );
+    assert_eq!(set("-mtune=generic").abi_key(), "625cec8df7399ff1");
+    // -march drops -mcpu before keying.
+    assert_eq!(set("-march=x86-64 -mcpu=nehalem").abi_key(), "bb36f8e7f8447eb1");
+    assert_eq!(set("-mcpu=cortex-a55").abi_key(), "088bb00be97cac57");
+    assert_eq!(set("-O2 -g -pipe").abi_key(), "");
+}
+
+#[test]
 fn hash_is_over_canonical_bytes_only() {
     // Contract: stable_hash == FNV-1a-64 of canonical(); re-parsing the
     // canonical string yields the same hash.
