@@ -421,10 +421,56 @@ fn abi_key_includes_mabi() {
 }
 
 #[test]
-fn abi_key_includes_mtune() {
-    let flags1 = FlagSet::parse("-mtune=generic", Dialect::C).unwrap().0;
-    let flags2 = FlagSet::parse("-mtune=cortex-a55", Dialect::C).unwrap().0;
+fn abi_key_excludes_mtune() {
+    let flags1 = FlagSet::parse("-march=armv8-a -mtune=generic", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-march=armv8-a -mtune=cortex-a55", Dialect::C).unwrap().0;
+    assert_eq!(flags1.abi_key(), flags2.abi_key());
+    assert_eq!(FlagSet::parse("-mtune=generic", Dialect::C).unwrap().0.abi_key(), "");
+}
+
+#[test]
+fn abi_key_includes_mwidth() {
+    let flags1 = FlagSet::parse("-m32", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-m64", Dialect::C).unwrap().0;
     assert_ne!(flags1.abi_key(), flags2.abi_key());
+}
+
+#[test]
+fn abi_key_includes_mfloat_abi_and_mfpu() {
+    let flags1 = FlagSet::parse("-march=armv7-a -mfloat-abi=hard", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-march=armv7-a -mfloat-abi=softfp", Dialect::C).unwrap().0;
+    assert_ne!(flags1.abi_key(), flags2.abi_key());
+
+    let flags1 = FlagSet::parse("-mfpu=neon", Dialect::C).unwrap().0;
+    let flags2 = FlagSet::parse("-mfpu=vfpv4", Dialect::C).unwrap().0;
+    assert_ne!(flags1.abi_key(), flags2.abi_key());
+}
+
+#[test]
+fn abi_key_includes_layout_toggles() {
+    let base = FlagSet::parse("-O2 -march=armv8-a", Dialect::C).unwrap().0;
+    for toggle in ["-fshort-enums", "-fshort-wchar", "-fpack-struct", "-fpack-struct=4"] {
+        let input = format!("-O2 -march=armv8-a {toggle}");
+        let with = FlagSet::parse(&input, Dialect::C).unwrap().0;
+        assert_ne!(base.abi_key(), with.abi_key(), "{toggle} not in key");
+    }
+    // Non-layout toggles stay out.
+    let wrapv = FlagSet::parse("-O2 -march=armv8-a -fwrapv", Dialect::C).unwrap().0;
+    assert_eq!(base.abi_key(), wrapv.abi_key());
+}
+
+#[test]
+fn mwidth_last_wins() {
+    let (set, warns) = FlagSet::parse("-m32 -m64", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-m64");
+    assert!(warns.is_empty());
+}
+
+#[test]
+fn mfloat_abi_mfpu_last_wins_lowercased() {
+    let (set, warns) = FlagSet::parse("-mfloat-abi=soft -mfloat-abi=HARD -mfpu=NEON", Dialect::C).unwrap();
+    assert_eq!(set.canonical(), "-mfloat-abi=hard -mfpu=neon");
+    assert!(warns.is_empty());
 }
 
 #[test]

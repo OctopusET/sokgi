@@ -82,33 +82,31 @@ impl FlagSet {
         })
     }
 
-    /// Stable hash of only the target-selection flags: `-march=`,
-    /// `-mcpu=`, `-mtune=`, `-mabi=`. 16 lowercase hex characters, or
-    /// `""` if the set contains none of them.
+    /// Stable hash of only the ABI-selecting flags: `-march=`, `-mcpu=`,
+    /// `-mabi=`, `-m16`/`-m32`/`-m64`/`-mx32`, `-mfloat-abi=`, `-mfpu=`,
+    /// and the layout toggles `-f[no-]short-enums`, `-f[no-]short-wchar`,
+    /// `-f[no-]pack-struct[=n]`. 16 lowercase hex characters, or `""` if
+    /// the set contains none of them.
     ///
-    /// Flag sets differing only in optimization, debug, or include
-    /// flags share an ABI key, so a cache can allow reuse across those
-    /// but not across targets.
-    ///
-    /// Equal keys mean equal target flags, not proven ABI
-    /// compatibility: other ABI-affecting flags (`-mfloat-abi=`,
-    /// `-fshort-enums`, `-fpack-struct`, ...) are not modeled, and
-    /// `-mtune=` is included although it affects only scheduling, not
-    /// ABI.
+    /// `-mtune=` is excluded: it changes instruction scheduling, not the
+    /// ABI, so builds differing only in `-mtune=` share a key. Sets
+    /// differing only in optimization, debug, or include flags share a
+    /// key too, so a cache can allow reuse across those but not across
+    /// targets. Flags outside the list above are not modeled.
     ///
     /// Frozen like [`FlagSet::stable_hash`]: FNV-1a 64-bit over the
-    /// canonical form of the target flags, pinned by golden tests.
+    /// canonical form of the ABI flags, pinned by golden tests.
     ///
     /// ```
-    /// use sokgi::{Dialect, FlagSet};
-    /// // Different optimization, same target → same ABI key
-    /// let (a, _) = FlagSet::parse("-O2 -march=armv8-a", Dialect::C).unwrap();
-    /// let (b, _) = FlagSet::parse("-O3 -march=armv8-a", Dialect::C).unwrap();
+    /// use sokgi::Dialect;
+    /// // Different optimization or -mtune, same target → same ABI key
+    /// let (a, _) = Dialect::C.parse("-O2 -march=armv8-a").unwrap();
+    /// let (b, _) = Dialect::C.parse("-O3 -march=armv8-a -mtune=cortex-a55").unwrap();
     /// assert_eq!(a.abi_key(), b.abi_key());
     ///
-    /// // Same optimization, different target → different ABI key
-    /// let (c, _) = FlagSet::parse("-O2 -march=armv8-a", Dialect::C).unwrap();
-    /// let (d, _) = FlagSet::parse("-O2 -march=armv7-a", Dialect::C).unwrap();
+    /// // Different float ABI → different ABI key
+    /// let (c, _) = Dialect::C.parse("-mfloat-abi=hard").unwrap();
+    /// let (d, _) = Dialect::C.parse("-mfloat-abi=softfp").unwrap();
     /// assert_ne!(c.abi_key(), d.abi_key());
     /// ```
     pub fn abi_key(&self) -> String {
@@ -116,9 +114,7 @@ impl FlagSet {
             .unordered
             .iter()
             .chain(&self.ordered)
-            .filter(|f| {
-                matches!(f, Flag::March(_) | Flag::Mcpu(_) | Flag::Mtune(_) | Flag::Mabi(_))
-            })
+            .filter(|f| is_abi_flag(f))
             .cloned()
             .collect();
 
@@ -128,6 +124,24 @@ impl FlagSet {
 
         let canonical = emit::emit(&abi_flags, &[]);
         format!("{:016x}", hash::fnv1a_64(canonical.as_bytes()))
+    }
+}
+
+fn is_abi_flag(f: &Flag) -> bool {
+    match f {
+        Flag::March(_)
+        | Flag::Mcpu(_)
+        | Flag::Mabi(_)
+        | Flag::Mwidth(_)
+        | Flag::MfloatAbi(_)
+        | Flag::Mfpu(_) => true,
+        Flag::Toggle { name, .. } => {
+            name == "short-enums"
+                || name == "short-wchar"
+                || name == "pack-struct"
+                || name.starts_with("pack-struct=")
+        }
+        _ => false,
     }
 }
 
