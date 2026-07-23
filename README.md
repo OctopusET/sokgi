@@ -27,6 +27,13 @@ assert_eq!(set.canonical(), "-O2 -g -march=cortex-a76+crc");
 | `-mabi=` | last-wins; lowercased |
 | `-m16`/`-m32`/`-m64`/`-mx32` | last-wins |
 | `-mfloat-abi=`, `-mfpu=` | last-wins; lowercased |
+| `-mthumb`/`-mno-thumb` | last-wins |
+| `-mlittle-endian`/`-mbig-endian` | last-wins |
+| `-mhard-float`/`-msoft-float` | last-wins |
+| `-mcmodel=` | last-wins; lowercased |
+| `-malign-double`/`-mno-align-double` | last-wins |
+| `-mgeneral-regs-only`/`-mno-general-regs-only` | last-wins |
+| `-mms-bitfields`/`-mno-ms-bitfields` | last-wins |
 | `-D<N>[=V]` / `-U<N>` | last-wins per `N`; `-U` beats `-D` (POSIX c99) |
 | `-f<n>` / `-fno-<n>`, `-W<n>` / `-Wno-<n>` | last-wins per `n` |
 | `-pipe` | idempotent |
@@ -116,8 +123,11 @@ existing store key is invalid, and is treated as a breaking release.
 
 `abi_key()` hashes only the ABI-selecting flags after
 canonicalization: `-march=`, `-mcpu=`, `-mabi=`,
-`-m16`/`-m32`/`-m64`/`-mx32`, `-mfloat-abi=`, `-mfpu=`, and the layout
-toggles `-f[no-]short-enums`, `-f[no-]short-wchar`,
+`-m16`/`-m32`/`-m64`/`-mx32`, `-mfloat-abi=`, `-mfpu=`,
+`-mthumb`/`-mno-thumb`, `-mlittle-endian`/`-mbig-endian`,
+`-mhard-float`/`-msoft-float`, `-mcmodel=`, `-malign-double`,
+`-mgeneral-regs-only`, `-mms-bitfields`,
+and the layout toggles `-f[no-]short-enums`, `-f[no-]short-wchar`,
 `-f[no-]pack-struct[=n]`. FNV-1a 64-bit, 16 hex chars, `""` if none
 present.
 

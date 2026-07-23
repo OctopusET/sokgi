@@ -30,6 +30,13 @@ pub(crate) fn canonicalize(
     let mut mwidth: Option<Flag> = None;
     let mut mfloat_abi: Option<Flag> = None;
     let mut mfpu: Option<Flag> = None;
+    let mut mthumb: Option<Flag> = None;
+    let mut mendian: Option<Flag> = None;
+    let mut mhard_float: Option<Flag> = None;
+    let mut mcmodel: Option<Flag> = None;
+    let mut malign_double: Option<Flag> = None;
+    let mut mgeneral_regs_only: Option<Flag> = None;
+    let mut mms_bitfields: Option<Flag> = None;
     let mut defines: Vec<(String, Option<String>)> = Vec::new();
     let mut undefs: Vec<String> = Vec::new();
     let mut toggles: Vec<(String, bool)> = Vec::new();
@@ -66,6 +73,13 @@ pub(crate) fn canonicalize(
             Flag::Mwidth(_) => mwidth = Some(f),
             Flag::MfloatAbi(_) => mfloat_abi = Some(f),
             Flag::Mfpu(_) => mfpu = Some(f),
+            Flag::Mthumb(_) => mthumb = Some(f),
+            Flag::Mendian(_) => mendian = Some(f),
+            Flag::MhardFloat(_) => mhard_float = Some(f),
+            Flag::Mcmodel(_) => mcmodel = Some(f),
+            Flag::MalignDouble(_) => malign_double = Some(f),
+            Flag::MgeneralRegsOnly(_) => mgeneral_regs_only = Some(f),
+            Flag::MmsBitfields(_) => mms_bitfields = Some(f),
             Flag::Define { name, value } => {
                 if let Some(i) = defines.iter().position(|(n, _)| n == &name) {
                     if defines[i].1 != value {
@@ -126,6 +140,13 @@ pub(crate) fn canonicalize(
     unordered.extend(mwidth);
     unordered.extend(mfloat_abi);
     unordered.extend(mfpu);
+    unordered.extend(mthumb);
+    unordered.extend(mendian);
+    unordered.extend(mhard_float);
+    unordered.extend(mcmodel);
+    unordered.extend(malign_double);
+    unordered.extend(mgeneral_regs_only);
+    unordered.extend(mms_bitfields);
 
     defines.sort_by(|a, b| a.0.cmp(&b.0));
     for (name, value) in defines {
