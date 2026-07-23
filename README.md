@@ -27,7 +27,7 @@ assert_eq!(set.canonical(), "-O2 -g -march=cortex-a76+crc");
 | `-mabi=` | last-wins; lowercased |
 | `-m16`/`-m32`/`-m64`/`-mx32` | last-wins |
 | `-mfloat-abi=`, `-mfpu=` | last-wins; lowercased |
-| `-mthumb`/`-mno-thumb` | last-wins |
+| `-mthumb`/`-mno-thumb` | last-wins; `-marm` = `-mno-thumb` |
 | `-mlittle-endian`/`-mbig-endian` | last-wins |
 | `-mhard-float`/`-msoft-float` | last-wins |
 | `-mcmodel=` | last-wins; lowercased |
