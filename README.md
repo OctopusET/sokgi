@@ -74,6 +74,13 @@ impl FlagSet {
     pub fn canonical(&self) -> String;
     pub fn stable_hash(&self) -> u64;
     pub fn stable_hash_hex(&self) -> String; // 16 lowercase hex chars
+    pub fn abi_key(&self) -> String;         // target flags only; "" if none
+    pub fn is_machine_dependent(&self) -> bool; // any -m*=native
+}
+
+impl Dialect {
+    pub fn parse(self, input: &str) // shorthand for FlagSet::parse
+        -> Result<(FlagSet, Vec<Warning>), Error>;
 }
 
 pub enum Warning {
@@ -102,6 +109,20 @@ platform, endianness, and future sokgi releases, so they are safe as
 persistent content-addressed store keys. Golden tests in
 `tests/stable_hash.rs` pin literal values; a change there means every
 existing store key is invalid, and is treated as a breaking release.
+
+## ABI key
+
+`abi_key()` hashes only the target-selection flags (`-march=`,
+`-mcpu=`, `-mtune=`, `-mabi=`) after canonicalization: FNV-1a 64-bit,
+16 hex chars, `""` if none present. Sets differing only in `-O`, `-g`,
+or include flags share a key, so a cache can reuse across optimization
+levels but not across targets.
+
+Equal keys mean equal target flags, not proven ABI compatibility:
+other ABI-affecting flags (`-mfloat-abi=`, `-fshort-enums`, …) are not
+modeled, and `-mtune=` is included although it affects only
+scheduling. Frozen like `stable_hash`, pinned in
+`tests/stable_hash.rs`.
 
 ## Prior art
 
